@@ -1,4 +1,4 @@
-package com.example.movieui.module.home.presentation
+package com.example.movieui.module.seat_selector.presentation
 
 
 import androidx.compose.animation.core.tween
