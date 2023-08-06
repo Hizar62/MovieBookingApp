@@ -26,8 +26,8 @@ import com.example.movieui.core.route.AppRouteName
 import com.example.movieui.core.theme.BlueVariant
 import com.example.movieui.core.theme.Gray
 import com.example.movieui.core.theme.Yellow
-//import com.example.movieui.module.home.model.MovieModel
-//import com.example.movieui.module.home.model.nowPlayingMovie
+import com.example.movieui.module.home.model.MovieModel
+import com.example.movieui.module.home.model.nowPlayingMovie
 import com.example.movieui.module.home.model.upcoming
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -54,7 +54,7 @@ fun HomeScreen(
                 )
         ) {
             Text(
-                text = "Welcome back",
+                text = "Welcome back, Dandi!",
                 style = MaterialTheme.typography.h6,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
@@ -65,7 +65,6 @@ fun HomeScreen(
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Banners()
             Banners()
             Spacer(modifier = Modifier.height(16.dp))
             Row(
@@ -102,7 +101,9 @@ fun HomeScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-
+            NowPlayingMovie { movie ->
+                navController.navigate("${AppRouteName.Detail}/${movie.id}")
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -157,7 +158,82 @@ fun UpcomingMovie() {
     }
 }
 
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun NowPlayingMovie(
+    onMovieClicked: (MovieModel) -> Unit
+) {
+    HorizontalPager(
+        count = nowPlayingMovie.size,
+        contentPadding = PaddingValues(start = 48.dp, end = 48.dp)
+    ) { page ->
 
+        Column(
+            modifier = Modifier
+                .wrapContentHeight()
+                .graphicsLayer {
+                    val pageOffset = calculateCurrentOffsetForPage(page).absoluteValue
+                    lerp(
+                        start = ScaleFactor(1f, 0.85f),
+                        stop = ScaleFactor(1f, 1f),
+                        fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                    ).also { scale ->
+                        scaleX = scale.scaleX
+                        scaleY = scale.scaleY
+                    }
+                }
+                .clickable {
+                    onMovieClicked(nowPlayingMovie[page])
+                },
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier.clip(RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.BottomCenter
+
+            ) {
+                Image(
+                    painter = painterResource(id = nowPlayingMovie[page].assetImage),
+                    contentDescription = "Movie Image",
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = 0.85f)
+                        .height(340.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer {
+                            val pageOffset = calculateCurrentOffsetForPage(page).absoluteValue
+                            val translation = pageOffset.coerceIn(0f, 1f)
+
+                            translationY = translation * 200
+                        }
+                        .fillMaxWidth(fraction = 0.85f)
+                        .wrapContentHeight()
+                        .background(
+                            BlueVariant
+                        )
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Buy Ticket", style = MaterialTheme.typography.subtitle1.copy(
+                            color = Yellow,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = nowPlayingMovie[page].title,
+                style = MaterialTheme.typography.h6,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
 
 @Composable
 fun Categories() {
