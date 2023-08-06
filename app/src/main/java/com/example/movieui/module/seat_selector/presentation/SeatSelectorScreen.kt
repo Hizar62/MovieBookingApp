@@ -1,344 +1,325 @@
 package com.example.movieui.module.seat_selector.presentation
 
-
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ScaleFactor
-import androidx.compose.ui.layout.lerp
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
-import androidx.navigation.NavHostController
-import com.example.movieui.R
-import com.example.movieui.core.route.AppRouteName
-import com.example.movieui.core.theme.BlueVariant
+import androidx.navigation.NavController
 import com.example.movieui.core.theme.Gray
+import com.example.movieui.core.theme.LightGray
 import com.example.movieui.core.theme.Yellow
-import com.example.movieui.module.home.model.MovieModel
-import com.example.movieui.module.home.model.nowPlayingMovie
-import com.example.movieui.module.home.model.upcoming
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.calculateCurrentOffsetForPage
-import com.google.accompanist.pager.rememberPagerState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlin.math.absoluteValue
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.*
 
 @Composable
-fun HomeScreen(
-    navController: NavHostController,
+fun SeatSelectorScreen(
+    navController: NavController,
 ) {
-    val scrollState = rememberScrollState()
+    val today = LocalDate.now()
+    val dateScrollState = rememberScrollState()
+    val timeScrollState = rememberScrollState()
 
-    Scaffold { padding ->
+    val selectedSeat = remember {
+        mutableStateListOf<String>()
+    }
+
+    val selectedDate = remember {
+        mutableStateOf<LocalDate?>(null)
+    }
+
+    val selectedTime = remember {
+        mutableStateOf<String?>(null)
+    }
+
+    Scaffold(
+        backgroundColor = LightGray
+    ) { padding ->
         Column(
             modifier = Modifier
+                .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(
-                    top = padding.calculateTopPadding() + 24.dp,
-                    bottom = padding.calculateBottomPadding() + 24.dp,
-                )
         ) {
-            Text(
-                text = "Welcome back, Dandi!",
-                style = MaterialTheme.typography.h6,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Book your Favorite Movie Here!",
-                style = MaterialTheme.typography.body1,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Banners()
-            Spacer(modifier = Modifier.height(16.dp))
             Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.padding(
+                    horizontal = 16.dp, vertical = 8.dp
+                ),
                 verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = {
+                    navController.popBackStack()
+                }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back Button")
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(text = "Select Seat", style = MaterialTheme.typography.h6)
+            }
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .padding(bottom = 48.dp, top = 8.dp)
+                    .background(color = Yellow)
+                    .fillMaxWidth(0.5f),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "Category",
-                    style = MaterialTheme.typography.h6,
+                    text = "Screen",
+                    style = MaterialTheme.typography.body2.copy(color = Color.White)
                 )
-                TextButton(onClick = { }) {
-                    Text(text = "See All")
-                }
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Categories()
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Text(
-                    text = "Now Playing Movie",
-                    style = MaterialTheme.typography.h6,
-                )
-                TextButton(onClick = { }) {
-                    Text(text = "See All")
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            NowPlayingMovie { movie ->
-                navController.navigate("${AppRouteName.Detail}/${movie.id}")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Text(
-                    text = "Upcoming Movie",
-                    style = MaterialTheme.typography.h6,
-                )
-                TextButton(onClick = { }) {
-                    Text(text = "See All")
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            UpcomingMovie()
-        }
-    }
-}
+            /// seat mapping
+            for (i in 1..6) {
+                Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    for (j in 1..8) {
+                        val seatNumber = "${(64 + i).toChar()}$j"
+                        SeatComp(
+                            isEnabled = i != 6,
+                            isSelected = selectedSeat.contains(seatNumber),
+                            seatNumber = seatNumber
+                        ) { selected, seat ->
+                            if (selected) {
+                                selectedSeat.remove(seat)
+                            } else {
+                                selectedSeat.add(seat)
+                            }
+                        }
 
-@Composable
-fun UpcomingMovie() {
-    LazyRow(
-        contentPadding = PaddingValues(start = 24.dp)
-    ) {
-        items(count = upcoming.size) { index ->
-            Box(modifier = Modifier
-                .padding(end = 24.dp)
-                .clickable { }) {
-                Column(
-                    modifier = Modifier.wrapContentHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = upcoming[index].assetImage),
-                        contentDescription = "Movie Image",
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier.size(width = 200.dp, height = 260.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = upcoming[index].title,
-                        style = MaterialTheme.typography.subtitle1,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalPagerApi::class)
-@Composable
-fun NowPlayingMovie(
-    onMovieClicked: (MovieModel) -> Unit
-) {
-    HorizontalPager(
-        count = nowPlayingMovie.size,
-        contentPadding = PaddingValues(start = 48.dp, end = 48.dp)
-    ) { page ->
-
-        Column(
-            modifier = Modifier
-                .wrapContentHeight()
-                .graphicsLayer {
-                    val pageOffset = calculateCurrentOffsetForPage(page).absoluteValue
-                    lerp(
-                        start = ScaleFactor(1f, 0.85f),
-                        stop = ScaleFactor(1f, 1f),
-                        fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                    ).also { scale ->
-                        scaleX = scale.scaleX
-                        scaleY = scale.scaleY
+                        if (j != 8) Spacer(modifier = Modifier.width(if (j == 4) 16.dp else 8.dp))
                     }
                 }
-                .clickable {
-                    onMovieClicked(nowPlayingMovie[page])
-                },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier.clip(RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.BottomCenter
-
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            /// indicator
+            Row(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(id = nowPlayingMovie[page].assetImage),
-                    contentDescription = "Movie Image",
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = 0.85f)
-                        .height(340.dp)
-                )
-                Box(
-                    modifier = Modifier
-                        .graphicsLayer {
-                            val pageOffset = calculateCurrentOffsetForPage(page).absoluteValue
-                            val translation = pageOffset.coerceIn(0f, 1f)
 
-                            translationY = translation * 200
-                        }
-                        .fillMaxWidth(fraction = 0.85f)
-                        .wrapContentHeight()
-                        .background(
-                            BlueVariant
-                        )
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
+                SeatComp(isEnabled = false)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "Reserved",
+                    style = MaterialTheme.typography.caption,
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                SeatComp(isEnabled = true, isSelected = true)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "Selected",
+                    style = MaterialTheme.typography.caption,
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                SeatComp(isEnabled = true, isSelected = false)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "Available",
+                    style = MaterialTheme.typography.caption,
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        "Buy Ticket", style = MaterialTheme.typography.subtitle1.copy(
-                            color = Yellow,
-                            fontWeight = FontWeight.Bold
-                        )
+                        text = "Select Seat",
+                        style = MaterialTheme.typography.subtitle1,
                     )
+                    Row(
+                        modifier = Modifier.horizontalScroll(dateScrollState),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        for (i in 0..14) {
+                            val date = today.plusDays(i.toLong())
+                            DateComp(
+                                date = date, isSelected = selectedDate.value == date
+                            ) {
+                                selectedDate.value = it
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.horizontalScroll(timeScrollState),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        for (i in 10..22 step 2) {
+                            val time = "$i:00"
+                            TimeComp(
+                                time = time, isSelected = selectedTime.value == time
+                            ) {
+                                selectedTime.value = it
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = "Total Price",
+                                style = MaterialTheme.typography.subtitle1,
+                            )
+                            Text(
+                                text = "\$${selectedSeat.size * 10}",
+                                style = MaterialTheme.typography.subtitle1,
+                            )
+                        }
+
+                        Button(
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Yellow,
+                            ),
+                            shape = RoundedCornerShape(32.dp),
+                            onClick = {},
+                        ) {
+                            Text("Continue")
+                        }
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = nowPlayingMovie[page].title,
-                style = MaterialTheme.typography.h6,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
+
 @Composable
-fun Categories() {
-    val categories = listOf(
-        "Animation",
-        "Horror",
-        "Action",
-        "Comedy",
-        "Romance",
-        "Sci-fi",
-        "History",
-        "Adventure",
-    )
-    val scrollState = rememberScrollState()
-
-    Row(
-        modifier = Modifier.horizontalScroll(scrollState)
-    ) {
-        repeat(categories.size) { index ->
-            Surface(
-                /// order matters
-                modifier = Modifier
-                    .padding(
-                        start = if (index == 0) 24.dp else 0.dp,
-                        end = 12.dp,
-                    )
-                    .border(width = 1.dp, color = Gray, shape = RoundedCornerShape(16.dp))
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { }
-                    .padding(12.dp)
-            ) {
-                Text(text = categories[index], style = MaterialTheme.typography.caption)
-            }
-        }
+fun TimeComp(
+    time: String,
+    isSelected: Boolean = false,
+    onClick: (String) -> Unit = {},
+) {
+    val color = when {
+        isSelected -> Yellow
+        else -> Yellow.copy(alpha = 0.15f)
     }
-}
-
-@OptIn(ExperimentalPagerApi::class)
-@Composable
-fun Banners() {
-    val banners = listOf(
-        R.drawable.banner_1,
-        R.drawable.banner_2,
-        R.drawable.banner_3,
-    )
-
-    val pagerState = rememberPagerState()
-    val bannerIndex = remember { mutableStateOf(0) }
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect { page ->
-            bannerIndex.value = page
-        }
-    }
-
-    /// auto scroll
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(10_000)
-            tween<Float>(1500)
-            pagerState.animateScrollToPage(
-                page = (pagerState.currentPage + 1) % pagerState.pageCount
-            )
-        }
-    }
-
-    Box(
+    Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(190.dp)
-            .padding(horizontal = 24.dp)
+            .wrapContentSize()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
+                onClick(time)
+            }, shape = RoundedCornerShape(16.dp), color = color
     ) {
-        HorizontalPager(
-            state = pagerState,
-            count = banners.size,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(190.dp)
-        ) { index ->
-            Image(
-                painter = painterResource(id = banners[index]),
-                contentDescription = "Banners",
-                contentScale = ContentScale.FillBounds,
-            )
-        }
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-            repeat(banners.size) { index ->
-                val height = 12.dp
-                val width = if (index == bannerIndex.value) 28.dp else 12.dp
-                val color = if (index == bannerIndex.value) Yellow else Gray
+        Text(
+            text = time,
+            style = MaterialTheme.typography.caption,
+            modifier = Modifier.padding(12.dp),
+        )
+    }
+}
 
-                Surface(
-                    modifier = Modifier
-                        .padding(end = 6.dp)
-                        .size(width, height)
-                        .clip(RoundedCornerShape(20.dp)),
-                    color = color,
-                ) {
-                }
+
+@Composable
+fun DateComp(
+    date: LocalDate,
+    isSelected: Boolean = false,
+    onClick: (LocalDate) -> Unit = {},
+) {
+    val color = when {
+        isSelected -> Yellow
+        else -> Yellow.copy(alpha = 0.15f)
+    }
+    val textBg = when {
+        isSelected -> Color.White
+        else -> Color.Transparent
+    }
+    Surface(
+        modifier = Modifier
+            .wrapContentSize()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
+                onClick(date)
+            }, shape = RoundedCornerShape(16.dp), color = color
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = date.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                style = MaterialTheme.typography.caption
+            )
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(textBg)
+
+                    .padding(4.dp),
+            ) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.caption,
+                )
             }
         }
+    }
+}
+
+@Composable
+fun SeatComp(
+    isEnabled: Boolean = false,
+    isSelected: Boolean = false,
+    seatNumber: String = "",
+    onClick: (Boolean, String) -> Unit = { _, _ -> },
+) {
+    val seatColor = when {
+        !isEnabled -> Color.Gray
+        isSelected -> Yellow
+        else -> Color.White
+    }
+
+    val textColor = when {
+        isSelected -> Color.White
+        else -> Color.Black
+    }
+
+    Box(modifier = Modifier
+        .size(32.dp)
+        .border(width = 1.dp, color = Gray, shape = RoundedCornerShape(8.dp))
+        .clip(RoundedCornerShape(8.dp))
+        .background(color = seatColor)
+        .clickable {
+            onClick(isSelected, seatNumber);
+        }
+        .padding(8.dp), contentAlignment = Alignment.Center) {
+        Text(
+            seatNumber,
+            style = MaterialTheme.typography.caption.copy(color = textColor),
+        )
     }
 }
